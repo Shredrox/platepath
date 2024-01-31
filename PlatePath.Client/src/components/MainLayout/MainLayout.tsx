@@ -18,7 +18,7 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 const SideNav = styled(Columns)`
-  width: 310px;
+  width: 230px;
   height: 100%;
   padding: 24px 28px;
   align-items: center;
@@ -101,7 +101,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               Dashboard
             </SideLink>
             <SideLink to="/profile">Your Profile</SideLink>
-            <SideLink to="/recipes" disabled>
+            <SideLink to="/recipes">
               Recipes
             </SideLink>
             <SideLink to="/forum" disabled>

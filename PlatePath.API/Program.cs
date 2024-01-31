@@ -113,6 +113,7 @@ builder.Services.AddTransient<IForumService, ForumService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddTransient<IEdamamClient, EdamamClient>();
 builder.Services.AddTransient<IProfileService, ProfileService>();
+builder.Services.AddTransient<IRecipeService, RecipeService>();
 
 // Load the connection string (ensure it's in your configuration - appsettings.json or environment variable)
 string storageConnectionString = builder.Configuration.GetConnectionString("AzureStorage");

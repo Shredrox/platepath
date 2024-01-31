@@ -16,6 +16,7 @@ public class RecipeBody
     public double calories { get; set; }
     public double CaloriesPerServing { get; set; }
     public TotalNutrients totalNutrients { get; set; }
+    public bool Finished { get; set; }
 }
 
 public class TotalNutrients

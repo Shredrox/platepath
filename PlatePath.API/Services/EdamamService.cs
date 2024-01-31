@@ -135,7 +135,8 @@ public class EdamamService : IEdamamService
                         Fats = (int)Math.Ceiling(recipe.recipe.totalNutrients.FAT.quantity / recipe.recipe.yield),
                         Protein = (int)Math.Ceiling(recipe.recipe.totalNutrients.PROCNT.quantity / recipe.recipe.yield),
                         EdamamId = edamamId,
-                        ImageURL = await AddImageToBlobStorage(edamamId, recipe.recipe.image)
+                        ImageURL = await AddImageToBlobStorage(edamamId, recipe.recipe.image),
+                        Finished = false
                     });
                 }
             }

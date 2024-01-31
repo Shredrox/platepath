@@ -5,6 +5,7 @@ import Login from "./pages/Login/Login";
 import MainLayout from "./components/MainLayout/MainLayout";
 import Plans from "./pages/Plans/Plans";
 import Profile from "./pages/Profile/Profile";
+import Recipes from "./pages/Recipes";
 
 const AppRoutes = () => {
   return (
@@ -25,7 +26,7 @@ const AppRoutes = () => {
           </MainLayout>
         }
       />
-      <Route path="/forum" element={<MainLayout>Forum</MainLayout>} />
+      <Route path="/recipes" element={<MainLayout><Recipes/></MainLayout>} />
       <Route
         path="/plans"
         element={

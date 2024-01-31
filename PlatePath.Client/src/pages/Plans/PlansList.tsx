@@ -3,6 +3,7 @@ import { BoxContainer, Columns } from "../../components";
 import { Plan } from "./Plans";
 import { Typography, Autocomplete, TextField, Divider } from "@mui/material";
 import { apiUrl, useAuth } from "../../components/auth";
+import axios from "axios";
 
 type Recipe = {
   id: number;
@@ -16,6 +17,7 @@ type Recipe = {
   protein: number;
   ingredientLines: string;
   imageURL: string;
+  finished: boolean;
 };
 
 const PlansList = ({
@@ -28,6 +30,21 @@ const PlansList = ({
   const { getToken } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [recipe, setRecipe] = useState<Recipe>();
+
+  const handleFinish = async () =>{
+    const token = getToken();
+
+    console.log(token);
+
+    const response = await axios.put(`${apiUrl}/Recipe/${recipe?.id}/finish`, null,{
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    console.log(response.data);
+
+    window.location.reload();
+  }
 
   useEffect(() => {
     getNames();
@@ -56,7 +73,7 @@ const PlansList = ({
   const onSelectRecipe = (e: React.SyntheticEvent<Element, Event>) => {
     const target = e.target as HTMLLIElement;
     console.log(target);
-    const recipe = recipes.find((obj) => obj.name === target.textContent);
+    const recipe = recipes.find((obj) => obj.name === target.textContent?.replace(/ ✓/g, ''));
     if (recipe) {
       setRecipe({
         ...recipe,
@@ -88,7 +105,7 @@ const PlansList = ({
             onChange={(e) => onSelectRecipe(e)}
             sx={{ width: 300 }}
             renderInput={(params) => <TextField {...params} label="Recipes" />}
-            getOptionLabel={(option: Recipe) => option.name}
+            getOptionLabel={(option: Recipe) => option.name + (option.finished ? " ✓" : "")}
           />
         ) : null}
       </BoxContainer>
@@ -114,6 +131,7 @@ const PlansList = ({
                 Carbohydrates: {recipe.carbohydrates}g
               </Typography>
               <Typography variant="h6">Protein: {recipe.protein}g</Typography>
+              <button onClick={handleFinish}>{recipe.finished ? "Mark as Not Finished" : "Mark as Finished"}</button>
             </Columns>
           </BoxContainer>
           <Columns

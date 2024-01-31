@@ -1,0 +1,53 @@
+*{
+    box-sizing: border-box;
+}
+
+.recipes-page{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.create-recipe-form{
+    gap: 1rem;
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.create-recipe-form input{
+    width: 100%;
+}
+
+.custom-recipes-list{
+    background-color: bisque;
+    width: 50%;
+    padding: 1rem;
+    border-radius: 1rem;
+    height: 600px;
+    overflow-y: scroll;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.custom-recipe{
+    background-color: rgb(251, 155, 155);
+    padding: 1rem;
+    border-radius: 1rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.recipe-info{
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
