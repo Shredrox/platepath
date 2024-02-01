@@ -27,7 +27,7 @@ namespace PlatePath.API.Controllers
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             
-            return Ok(_recipeService.GetUserRecipes(userId));
+            return Ok(_recipeService.GetUserRecipes(userId).ToList());
         }
         
         [HttpPut("{id:int}/finish")]

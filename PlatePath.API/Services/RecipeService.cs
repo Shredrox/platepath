@@ -1,6 +1,4 @@
-﻿
-using Microsoft.EntityFrameworkCore;
-using PlatePath.API.Clients;
+﻿using Microsoft.EntityFrameworkCore;
 using PlatePath.API.Data;
 using PlatePath.API.Data.Models.Recipes;
 using PlatePath.API.DTOs;
@@ -10,12 +8,10 @@ namespace PlatePath.API.Services
     public class RecipeService : IRecipeService
     {
         private readonly ApplicationDbContext _context;
-        readonly IEdamamClient _edamamClient;
 
-        public RecipeService(ApplicationDbContext context, IEdamamClient edamamClient)
+        public RecipeService(ApplicationDbContext context)
         {
             _context = context;
-            _edamamClient = edamamClient;
         }
 
         public async Task CreateCustomRecipe(RecipeDTO request, string? userId)
@@ -48,9 +44,30 @@ namespace PlatePath.API.Services
             await _context.SaveChangesAsync();
         }
 
-        public List<Recipe> GetUserRecipes(string? userId)
+        public IQueryable<Recipe> GetUserRecipes(string? userId)
         {
-            return _context.Recipes.Where(r => r.UserId == userId).ToList();
+            return _context.Recipes.Where(r => r.UserId == userId);
+        }
+
+        public async Task AddRecipeToMealPlan(MealPlanRecipeAddRequest request, string? userId)
+        {
+            var mealPlan = await _context.MealPlans
+                .Include(m => m.Meals)
+                .SingleOrDefaultAsync(m => m.Name == request.MealPlanName && m.UserId == userId);
+
+            if (mealPlan != null)
+            {
+                var existingRecipe = mealPlan.Meals
+                    .FirstOrDefault(r => r.Id == request.RecipeId);
+                
+                if (existingRecipe == null)
+                {
+                    mealPlan.Meals.Add(await _context.Recipes
+                        .SingleAsync(r => r.Id == request.RecipeId));
+                    
+                    await _context.SaveChangesAsync();
+                }
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 import { useEffect, useState } from "react"
 import { apiUrl, useAuth } from "../components/auth";
+import { Autocomplete, TextField } from "@mui/material";
 
 type Recipe = {
   id: number;
@@ -29,6 +30,68 @@ const Recipes = () => {
   const [ingredientLines, setIngredientLines] = useState('');
 
   const [customRecipes, setCustomRecipes] = useState<Recipe[]>([]);
+  const [names, setNames] = useState([]);
+  const [selectedMealPlan, setSelectedMealPlan] = useState<string | null>('');
+
+  useEffect(() => {
+    const getNames = () => {
+      const token = getToken();
+      const myHeaders = new Headers({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      });
+      fetch(`${apiUrl}/MealPlans/getAll`, {
+        method: "GET",
+        headers: myHeaders,
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.mealPlanNames) {
+            setNames(res.mealPlanNames);
+          }
+        })
+        .catch((err) => alert(err));
+    };
+
+    getNames();
+  }, []);
+
+  useEffect(() => {
+    const getUserRecipes = async () =>{
+      const token = getToken();
+
+      const response = await axios.get(`${apiUrl}/Recipe/all-custom`,{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setCustomRecipes(response.data);
+    }
+
+    getUserRecipes();
+  }, [])
+
+  const mealPlaneChange = (e: React.SyntheticEvent<Element, Event>) =>{
+    const target = e.target as HTMLLIElement;
+    setSelectedMealPlan(target.textContent);
+  }
+
+  const handleAddToMealPlan = async (recipeId: number) =>{
+    const token = getToken();
+
+    const response = await axios.post(`${apiUrl}/MealPlans/recipeAdd`,{
+      mealPlanName: selectedMealPlan,
+      recipeId: recipeId
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    setSelectedMealPlan('');
+    window.location.reload();
+  }
 
   const handleSubmit = async () =>{
     const newRecipe = {
@@ -51,22 +114,6 @@ const Recipes = () => {
 
     window.location.reload();
   }
-
-  useEffect(() => {
-    const getUserRecipes = async () =>{
-      const token = getToken();
-
-      const response = await axios.get(`${apiUrl}/Recipe/all-custom`,{
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      setCustomRecipes(response.data);
-    }
-
-    getUserRecipes();
-  }, [])
 
   return (
     <div className='recipes-page'>
@@ -130,6 +177,17 @@ const Recipes = () => {
               <span>Protein: {recipe.protein}</span> 
             </div>
             <span>Ingredients: {recipe.ingredientLines}</span> 
+            <div className="meal-add-container">
+              <Autocomplete
+                disablePortal
+                id="combo-box-demo"
+                options={names}
+                onChange={(e) => mealPlaneChange(e)}
+                sx={{ width: 300 }}
+                renderInput={(params) => <TextField {...params} label="Meal Plans" />}
+              />
+              <button onClick={() => handleAddToMealPlan(recipe.id)}>Add</button>
+            </div>
           </div>
         ))}
       </div>

@@ -51,3 +51,13 @@
     gap: 1rem;
     align-items: center;
 }
+
+.meal-add-container{
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.meal-add-container button{
+    height: 30px;
+}

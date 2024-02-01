@@ -7,6 +7,7 @@ namespace PlatePath.API.Services
     {
         Task CreateCustomRecipe(RecipeDTO request, string? userId);
         Task FinishRecipe(int id);
-        List<Recipe> GetUserRecipes(string? userId);
+        IQueryable<Recipe> GetUserRecipes(string? userId);
+        Task AddRecipeToMealPlan(MealPlanRecipeAddRequest request, string? userId);
     }
 }
