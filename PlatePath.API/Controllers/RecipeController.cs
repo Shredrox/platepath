@@ -29,14 +29,6 @@ namespace PlatePath.API.Controllers
             
             return Ok(_recipeService.GetUserRecipes(userId).ToList());
         }
-        
-        [HttpPut("{id:int}/finish")]
-        [Authorize(Roles = "User")]
-        public async Task<IActionResult> FinishRecipe(int id)   
-        {
-            await _recipeService.FinishRecipe(id);
-            return Ok("Recipe marked as finished");
-        }
 
         [HttpPost("create")]
         [Authorize(Roles = "User")]

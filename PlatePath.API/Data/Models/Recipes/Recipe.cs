@@ -16,8 +16,7 @@ namespace PlatePath.API.Data.Models.Recipes
         public Post? Post { get; set; }
 
         [JsonIgnore]
-        public ICollection<MealPlan> MealPlans { get; set; } = new List<MealPlan>();
-        
+        public ICollection<MealPlanRecipe> MealPlanRecipes { get; set; } = new List<MealPlanRecipe>();
         public string? UserId { get; set; }
         
         public string? EdamamId { get; set; }
@@ -37,6 +36,5 @@ namespace PlatePath.API.Data.Models.Recipes
         public string IngredientLines { get; set; }
 
         public string? ImageURL { get; set; }
-        public bool Finished { get; set; }
     }
 }

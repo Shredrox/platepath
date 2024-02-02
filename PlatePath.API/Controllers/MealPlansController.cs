@@ -8,7 +8,6 @@ using PlatePath.API.DTOs;
 
 namespace PlatePath.API.Controllers
 {
-
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -16,7 +15,7 @@ namespace PlatePath.API.Controllers
     {
         readonly IEdamamService _edamamService;
         private readonly IRecipeService _recipeService;
-
+        
         public MealPlansController(IEdamamService edamamService, IRecipeService recipeService)
         {
             _edamamService = edamamService;
@@ -64,6 +63,33 @@ namespace PlatePath.API.Controllers
             
             await _recipeService.AddRecipeToMealPlan(request, userId);
             return Ok("Recipe added to meal plan");
+        }
+
+        [HttpPut("setMealCompletionStatus")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> SetMealCompletionStatus([FromBody] SetRecipeCompletionStatusRequest request)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null)
+                return ValidationProblem();
+
+            bool updated = await _edamamService.SetMealPlanRecipeCompletionStatus(
+                request.MealPlanId, request.RecipeId, request.Completed);
+            
+            return Ok(updated);
+        }
+        
+        [HttpGet("getMealCompletionStatuses")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> GetMealCompletionStatuses(int mealPlanId)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null)
+                return ValidationProblem();
+
+            List<MealPlanRecipe> results = await _edamamService.GetMealPlanRecipeCompletionStatuses(mealPlanId);
+
+            return Ok(results);
         }
     }
 }

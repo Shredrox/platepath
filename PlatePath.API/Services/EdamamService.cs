@@ -17,7 +17,9 @@ public class EdamamService : IEdamamService
     readonly ApplicationDbContext _dbContext;
     readonly IBlobStorageService _blobStorageService;
 
-    public EdamamService(IEdamamClient edamamClient, IProfileService profileService, IBlobStorageService blobStorageService, ApplicationDbContext dbContext, ILogger<EdamamService> logger, IOptions<Configuration> cfg)
+    public EdamamService(IEdamamClient edamamClient, IProfileService profileService,
+        IBlobStorageService blobStorageService, ApplicationDbContext dbContext, ILogger<EdamamService> logger,
+        IOptions<Configuration> cfg)
     {
         _edamamClient = edamamClient;
         _profileService = profileService;
@@ -53,28 +55,27 @@ public class EdamamService : IEdamamService
             plan = new Plan
             {
                 accept = request.DietType != null
-                ? new Accept
-                {
-                    all = new List<All>
-                {
-                    new All
+                    ? new Accept
                     {
-                        health = new List<string>
+                        all = new List<All>
                         {
-                            request.DietType
+                            new All
+                            {
+                                health = new List<string>
+                                {
+                                    request.DietType
+                                }
+                            }
                         }
                     }
-                }
-                }
-                : null,
+                    : null,
                 fit = new Fit
                 {
                     ENERC_KCAL = new MinMaxQuantity
                     {
                         min = request.MinCalories ??= 1000,
                         max = request.MaxCalories ??= 5000
-                    }
-                    ,
+                    },
                     PROCNT = new MinMaxQuantity
                     {
                         min = proteins - 5,
@@ -108,8 +109,8 @@ public class EdamamService : IEdamamService
         var mealIds = mealIdsPerDay.Values.SelectMany(x => x).ToList();
 
         List<Recipe> recipesInDBb = _dbContext.Recipes
-                .Where(row => !string.IsNullOrEmpty(row.EdamamId) && mealIds.Contains(row.EdamamId))
-                .ToList();
+            .Where(row => !string.IsNullOrEmpty(row.EdamamId) && mealIds.Contains(row.EdamamId))
+            .ToList();
 
         if (recipesInDBb.Count > 0)
             mealIds.RemoveAll(id => recipesInDBb.Any(row => row.EdamamId == id));
@@ -130,13 +131,13 @@ public class EdamamService : IEdamamService
                         Name = recipe.recipe.label,
                         Kcal = (int)Math.Ceiling(recipe.recipe.CaloriesPerServing),
                         Servings = (int)Math.Ceiling(recipe.recipe.yield),
-                        IngredientLines = recipe.recipe.IngredientsString.Replace("&&","\r\n"),
-                        Carbohydrates = (int)Math.Ceiling(recipe.recipe.totalNutrients.CHOCDF.quantity / recipe.recipe.yield),
+                        IngredientLines = recipe.recipe.IngredientsString.Replace("&&", "\r\n"),
+                        Carbohydrates =
+                            (int)Math.Ceiling(recipe.recipe.totalNutrients.CHOCDF.quantity / recipe.recipe.yield),
                         Fats = (int)Math.Ceiling(recipe.recipe.totalNutrients.FAT.quantity / recipe.recipe.yield),
                         Protein = (int)Math.Ceiling(recipe.recipe.totalNutrients.PROCNT.quantity / recipe.recipe.yield),
                         EdamamId = edamamId,
-                        ImageURL = await AddImageToBlobStorage(edamamId, recipe.recipe.image),
-                        Finished = false
+                        ImageURL = await AddImageToBlobStorage(edamamId, recipe.recipe.image)
                     });
                 }
             }
@@ -159,10 +160,16 @@ public class EdamamService : IEdamamService
                 Name = request.MealPlanName,
                 Days = request.Days,
                 MealsPerDay = request.MealsPerDay,
-                Meals = recipesInDBb,
+                MealPlanRecipes = new List<MealPlanRecipe>()
             };
 
             _dbContext.MealPlans.Add(mealPlan);
+            _dbContext.SaveChanges();
+            foreach (Recipe recipe in recipesInDBb)
+            {
+                _dbContext.MealPlanRecipes.Add(new MealPlanRecipe(mealPlan.Id, recipe.Id));
+            }
+
             _dbContext.SaveChanges();
 
             return new GenerateMealPlanResponse(ErrorCode.OK)
@@ -177,16 +184,28 @@ public class EdamamService : IEdamamService
     public async Task<MealPlanResponse> GetMealPlan(string userId, string name)
     {
         var mealPlan = await _dbContext.MealPlans
-            .Include(mp => mp.Meals)
+            .Include(mp => mp.MealPlanRecipes)
             .FirstOrDefaultAsync(mp => mp.Name == name && mp.UserId == userId);
 
-        if (mealPlan is not null)
-            return new MealPlanResponse(ErrorCode.OK)
-            {
-                MealPlan = mealPlan
-            };
+        if (mealPlan is null)
+        {
+            return new MealPlanResponse(ErrorCode.DbError);
+        }
 
-        return new MealPlanResponse(ErrorCode.DbError);
+        ICollection<MealPlanRecipe> mealPlanRecipes = _dbContext.MealPlanRecipes
+            .Where(mpr => mpr.MealPlanId == mealPlan.Id).AsEnumerable().ToList();
+
+        var recipes = new List<Recipe>();
+
+        foreach (MealPlanRecipe mpr in mealPlanRecipes)
+        {
+            recipes.Add(_dbContext.Recipes.First(r => r.Id == mpr.RecipeId));
+        }
+        return new MealPlanResponse(ErrorCode.OK)
+        {
+            MealPlan = mealPlan,
+            Recipes = recipes
+        }; 
     }
 
     public async Task<AllMealPlansResponse> GetAllMealPlans(string userId)
@@ -206,6 +225,32 @@ public class EdamamService : IEdamamService
         return new AllMealPlansResponse(ErrorCode.DbError);
     }
 
+    public async Task<bool> SetMealPlanRecipeCompletionStatus(int mealPlanId, int recipeId, bool completed)
+    {
+        var mealPlanRecipe = await _dbContext.MealPlanRecipes
+            .Include(mp => mp.MealPlan)
+            .FirstOrDefaultAsync(mp => mp.MealPlanId == mealPlanId && mp.RecipeId == recipeId);
+        if (mealPlanRecipe is null)
+        {
+            return false;
+        }
+
+        mealPlanRecipe.IsCompleted = completed;
+        _dbContext.MealPlanRecipes.Update(mealPlanRecipe);
+        return _dbContext.SaveChanges() > 0;
+    }
+
+    public async Task<List<MealPlanRecipe>> GetMealPlanRecipeCompletionStatuses(int mealPlanId)
+    {
+        var mealPlan = await _dbContext.MealPlans.FindAsync(mealPlanId);
+        if (mealPlan is null)
+        {
+            return new List<MealPlanRecipe>();
+        }
+
+        return await _dbContext.MealPlanRecipes.Where(e => e.MealPlanId == mealPlanId).ToListAsync();
+    }
+
     Dictionary<int, List<string>> GetTrimmedIdsPerDay(EdamamMealPlanResponse? mealPlanResponse)
     {
         var trimmedIdsPerDay = new Dictionary<int, List<string>>();
@@ -220,6 +265,7 @@ public class EdamamService : IEdamamService
                     var trimmedIds = GetTrimmedIdsFromSections(dailyMeals.sections);
                     trimmedIdsPerDay.Add(day, trimmedIds);
                 }
+
                 day++;
             }
         }
@@ -313,5 +359,4 @@ public class EdamamService : IEdamamService
             return string.Empty;
         }
     }
-
 }

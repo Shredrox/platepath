@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using PlatePath.API.Data.Models.Recipes;
 using PlatePath.API.Singleton;
 
@@ -14,7 +15,9 @@ public class MealPlan
     public string Name { get; set; }
     public int Days { get; set; }
     public int MealsPerDay { get; set; }
-    public ICollection<Recipe> Meals { get; set; } = new List<Recipe>();
+    
+    [JsonIgnore]
+    public ICollection<MealPlanRecipe> MealPlanRecipes { get; set; } = new List<MealPlanRecipe>();
 }
 
 public record MealPlanResponse : BaseResponse
@@ -22,6 +25,8 @@ public record MealPlanResponse : BaseResponse
     public MealPlanResponse() { }
     public MealPlanResponse(ErrorCode error) : base(error) { }
     public MealPlan MealPlan { get; set; }
+    
+    public ICollection<Recipe> Recipes { get; set; }
 }
 
 public record AllMealPlansResponse : BaseResponse

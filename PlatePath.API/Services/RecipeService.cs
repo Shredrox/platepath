@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PlatePath.API.Data;
+using PlatePath.API.Data.Models.MealPlans;
 using PlatePath.API.Data.Models.Recipes;
 using PlatePath.API.DTOs;
 
@@ -26,21 +27,9 @@ namespace PlatePath.API.Services
                 Carbohydrates = request.Carbohydrates,
                 Fats = request.Fats,
                 Protein = request.Protein,
-                Finished = false
             };
 
             _context.Recipes.Add(recipe);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task FinishRecipe(int id)
-        {
-            var recipe = await _context.Recipes.SingleOrDefaultAsync(r => r.Id == id);
-            if (recipe == null)
-            {
-                return;
-            }
-            recipe.Finished = !recipe.Finished;
             await _context.SaveChangesAsync();
         }
 
@@ -52,18 +41,22 @@ namespace PlatePath.API.Services
         public async Task AddRecipeToMealPlan(MealPlanRecipeAddRequest request, string? userId)
         {
             var mealPlan = await _context.MealPlans
-                .Include(m => m.Meals)
+                .Include(m => m.MealPlanRecipes)
                 .SingleOrDefaultAsync(m => m.Name == request.MealPlanName && m.UserId == userId);
-
+            
             if (mealPlan != null)
             {
-                var existingRecipe = mealPlan.Meals
-                    .FirstOrDefault(r => r.Id == request.RecipeId);
+                var existingRecipe = mealPlan.MealPlanRecipes
+                    .FirstOrDefault(r => r.RecipeId == request.RecipeId);
                 
                 if (existingRecipe == null)
                 {
-                    mealPlan.Meals.Add(await _context.Recipes
-                        .SingleAsync(r => r.Id == request.RecipeId));
+                    var recipe = await _context.Recipes
+                        .SingleAsync(r => r.Id == request.RecipeId);
+
+                    var newRecipe = new MealPlanRecipe(mealPlan.Id, recipe.Id);
+                    
+                    mealPlan.MealPlanRecipes.Add(newRecipe);
                     
                     await _context.SaveChangesAsync();
                 }
